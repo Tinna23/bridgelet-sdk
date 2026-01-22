@@ -12,6 +12,7 @@ import { StellarModule } from './modules/stellar/stellar.module.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
+import { SweepsModule } from './modules/sweeps/sweeps.module.js';
 
 @Module({
   imports: [
@@ -35,7 +36,7 @@ import { AppService } from './app.service.js';
     ]),
     AccountsModule,
     // ClaimsModule,
-    // SweepsModule,
+    SweepsModule,
     // WebhooksModule,
     StellarModule,
     HealthModule,

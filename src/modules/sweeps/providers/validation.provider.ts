@@ -1,7 +1,3 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Account } from '../../accounts/entities/account.entity.js';
 import {
   Injectable,
   BadRequestException,
@@ -27,17 +23,6 @@ export class ValidationProvider {
   ) {}
 
   /**
-   * Validate sweep parameters before execution
-   */
-  public async validateSweepParameters(dto: ExecuteSweepDto): Promise<void> {
-    this.logger.log(`Validating sweep parameters for account: ${dto.accountId}`);
-
-    // Validate account exists
-    const account = await this.accountRepository.findOne({
-    private readonly accountsRepository: Repository<Account>,
-  ) {}
-
-  /**
    * Validate all sweep parameters before execution
    */
   public async validateSweepParameters(dto: ExecuteSweepDto): Promise<void> {
@@ -49,59 +34,17 @@ export class ValidationProvider {
     this.validateStellarAddress(dto.destinationAddress);
 
     // Validate account exists and is in correct state
-    const account = await this.accountsRepository.findOne({
+    const account = await this.accountRepository.findOne({
       where: { id: dto.accountId },
     });
 
     if (!account) {
-      throw new BadRequestException(`Account not found: ${dto.accountId}`);
+      throw new NotFoundException(`Account ${dto.accountId} not found`);
     }
 
     // Validate ephemeral public key matches
     if (account.publicKey !== dto.ephemeralPublicKey) {
       throw new BadRequestException('Ephemeral public key mismatch');
-    }
-
-    // Validate destination address format (basic Stellar address validation)
-    if (!this.isValidStellarAddress(dto.destinationAddress)) {
-      throw new BadRequestException('Invalid destination address format');
-    }
-
-    // Validate amount is positive
-    const amount = parseFloat(dto.amount);
-    if (isNaN(amount) || amount <= 0) {
-      throw new BadRequestException('Amount must be a positive number');
-    }
-
-    // Validate asset format
-    if (!this.isValidAssetFormat(dto.asset)) {
-      throw new BadRequestException('Invalid asset format');
-    }
-
-    this.logger.log('Sweep parameters validated successfully');
-  }
-
-  /**
-   * Check if account can be swept (validation only)
-   */
-  public async canSweep(accountId: string, destinationAddress: string): Promise<boolean> {
-    try {
-      const account = await this.accountRepository.findOne({
-        where: { id: accountId },
-      });
-
-      if (!account) {
-        return false;
-      }
-
-      if (!this.isValidStellarAddress(destinationAddress)) {
-        return false;
-      }
-
-      return true;
-    } catch (error) {
-      this.logger.error(`Error checking sweep eligibility: ${error.message}`);
-      throw new NotFoundException(`Account ${dto.accountId} not found`);
     }
 
     // Check account status
@@ -121,11 +64,22 @@ export class ValidationProvider {
       throw new BadRequestException('Account has expired');
     }
 
+    // Validate amount is positive
+    const amount = parseFloat(dto.amount);
+    if (isNaN(amount) || amount <= 0) {
+      throw new BadRequestException('Amount must be a positive number');
+    }
+
     // Validate amount matches account balance
     if (dto.amount !== account.amount) {
       throw new BadRequestException(
         `Amount mismatch: expected ${account.amount}, got ${dto.amount}`,
       );
+    }
+
+    // Validate asset format
+    if (!this.isValidAssetFormat(dto.asset)) {
+      throw new BadRequestException('Invalid asset format');
     }
 
     // Validate asset matches
@@ -146,7 +100,7 @@ export class ValidationProvider {
     destinationAddress: string,
   ): Promise<boolean> {
     try {
-      const account = await this.accountsRepository.findOne({
+      const account = await this.accountRepository.findOne({
         where: { id: accountId },
       });
 
@@ -162,19 +116,12 @@ export class ValidationProvider {
   }
 
   /**
-   * Get sweep status for an account
-   */
-  public async getSweepStatus(accountId: string): Promise<{
-    canSweep: boolean;
-    reason?: string;
-  }> {
-    const account = await this.accountRepository.findOne({
    * Get detailed sweep status
    */
   public async getSweepStatus(
     accountId: string,
   ): Promise<{ canSweep: boolean; reason?: string }> {
-    const account = await this.accountsRepository.findOne({
+    const account = await this.accountRepository.findOne({
       where: { id: accountId },
     });
 
@@ -184,6 +131,8 @@ export class ValidationProvider {
 
     if (!account.publicKey) {
       return { canSweep: false, reason: 'No public key associated with account' };
+    }
+
     if (account.status === AccountStatus.CLAIMED) {
       return { canSweep: false, reason: 'Already swept' };
     }
@@ -205,6 +154,20 @@ export class ValidationProvider {
 
   /**
    * Validate Stellar address format
+   */
+  private validateStellarAddress(address: string): void {
+    try {
+      // Use Stellar SDK's built-in validation
+      if (!StrKey.isValidEd25519PublicKey(address)) {
+        throw new BadRequestException(`Invalid Stellar address: ${address}`);
+      }
+    } catch (error) {
+      throw new BadRequestException(`Invalid Stellar address: ${address}`);
+    }
+  }
+
+  /**
+   * Validate Stellar address format (boolean return)
    */
   private isValidStellarAddress(address: string): boolean {
     // Stellar addresses start with G and are 56 characters long
@@ -233,14 +196,5 @@ export class ValidationProvider {
 
     // Issuer must be valid Stellar address
     return this.isValidStellarAddress(issuer);
-  private validateStellarAddress(address: string): void {
-    try {
-      // Use Stellar SDK's built-in validation
-      if (!StrKey.isValidEd25519PublicKey(address)) {
-        throw new BadRequestException(`Invalid Stellar address: ${address}`);
-      }
-    } catch (error) {
-      throw new BadRequestException(`Invalid Stellar address: ${address}`);
-    }
   }
 }

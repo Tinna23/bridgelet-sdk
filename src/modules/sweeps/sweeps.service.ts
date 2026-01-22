@@ -52,13 +52,6 @@ export class SweepsService {
     this.logger.log(`Sweep completed successfully: ${txResult.hash}`);
 
     return {
-      success: true,
-      txHash: txResult.hash,
-      contractAuthHash: authResult.hash,
-    // TODO: Step 2 - Authorize via contract (Issue #3)
-    // TODO: Step 3 - Execute transaction (Issue #4)
-
-    return {
       success: false,
       txHash: '',
       contractAuthHash: '',
