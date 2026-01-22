@@ -1,5 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ValidationProvider } from './providers/validation.provider.js';
+import { ContractProvider } from './providers/contract.provider.js';
+import { TransactionProvider } from './providers/transaction.provider.js';
 import type { ExecuteSweepDto } from './dto/execute-sweep.dto.js';
 import type { SweepResult } from './interfaces/sweep-result.interface.js';
 
@@ -9,6 +11,8 @@ export class SweepsService {
 
   constructor(
     private readonly validationProvider: ValidationProvider,
+    private readonly contractProvider: ContractProvider,
+    private readonly transactionProvider: TransactionProvider,
   ) {}
 
   /**
@@ -20,8 +24,32 @@ export class SweepsService {
     // Step 1: Validate sweep parameters
     await this.validationProvider.validateSweepParameters(dto);
 
-    // TODO: Step 2 - Authorize via contract (Issue #3)
-    // TODO: Step 3 - Execute transaction (Issue #4)
+    // Step 2: Authorize sweep via contract
+    const authResult = await this.contractProvider.authorizeSweep({
+      ephemeralPublicKey: dto.ephemeralPublicKey,
+      destinationAddress: dto.destinationAddress,
+    });
+
+    // Step 3: Execute on-chain transfer
+    const txResult = await this.transactionProvider.executeSweepTransaction({
+      ephemeralSecret: dto.ephemeralSecret,
+      destinationAddress: dto.destinationAddress,
+      amount: dto.amount,
+      asset: dto.asset,
+    });
+
+    // Step 4: Optionally merge account to reclaim reserve
+    try {
+      await this.transactionProvider.mergeAccount({
+        ephemeralSecret: dto.ephemeralSecret,
+        destinationAddress: dto.destinationAddress,
+      });
+    } catch (error) {
+      this.logger.warn(`Account merge failed (non-critical): ${error.message}`);
+      // Continue even if merge fails - sweep was successful
+    }
+
+    this.logger.log(`Sweep completed successfully: ${txResult.hash}`);
 
     return {
       success: false,

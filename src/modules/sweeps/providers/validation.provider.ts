@@ -19,7 +19,7 @@ export class ValidationProvider {
 
   constructor(
     @InjectRepository(Account)
-    private readonly accountsRepository: Repository<Account>,
+    private readonly accountRepository: Repository<Account>,
   ) {}
 
   /**
@@ -34,12 +34,17 @@ export class ValidationProvider {
     this.validateStellarAddress(dto.destinationAddress);
 
     // Validate account exists and is in correct state
-    const account = await this.accountsRepository.findOne({
+    const account = await this.accountRepository.findOne({
       where: { id: dto.accountId },
     });
 
     if (!account) {
       throw new NotFoundException(`Account ${dto.accountId} not found`);
+    }
+
+    // Validate ephemeral public key matches
+    if (account.publicKey !== dto.ephemeralPublicKey) {
+      throw new BadRequestException('Ephemeral public key mismatch');
     }
 
     // Check account status
@@ -59,11 +64,22 @@ export class ValidationProvider {
       throw new BadRequestException('Account has expired');
     }
 
+    // Validate amount is positive
+    const amount = parseFloat(dto.amount);
+    if (isNaN(amount) || amount <= 0) {
+      throw new BadRequestException('Amount must be a positive number');
+    }
+
     // Validate amount matches account balance
     if (dto.amount !== account.amount) {
       throw new BadRequestException(
         `Amount mismatch: expected ${account.amount}, got ${dto.amount}`,
       );
+    }
+
+    // Validate asset format
+    if (!this.isValidAssetFormat(dto.asset)) {
+      throw new BadRequestException('Invalid asset format');
     }
 
     // Validate asset matches
@@ -84,7 +100,7 @@ export class ValidationProvider {
     destinationAddress: string,
   ): Promise<boolean> {
     try {
-      const account = await this.accountsRepository.findOne({
+      const account = await this.accountRepository.findOne({
         where: { id: accountId },
       });
 
@@ -105,12 +121,16 @@ export class ValidationProvider {
   public async getSweepStatus(
     accountId: string,
   ): Promise<{ canSweep: boolean; reason?: string }> {
-    const account = await this.accountsRepository.findOne({
+    const account = await this.accountRepository.findOne({
       where: { id: accountId },
     });
 
     if (!account) {
       return { canSweep: false, reason: 'Account not found' };
+    }
+
+    if (!account.publicKey) {
+      return { canSweep: false, reason: 'No public key associated with account' };
     }
 
     if (account.status === AccountStatus.CLAIMED) {
@@ -144,5 +164,37 @@ export class ValidationProvider {
     } catch (error) {
       throw new BadRequestException(`Invalid Stellar address: ${address}`);
     }
+  }
+
+  /**
+   * Validate Stellar address format (boolean return)
+   */
+  private isValidStellarAddress(address: string): boolean {
+    // Stellar addresses start with G and are 56 characters long
+    return /^G[A-Z2-7]{55}$/.test(address);
+  }
+
+  /**
+   * Validate asset format (native, XLM, or CODE:ISSUER)
+   */
+  private isValidAssetFormat(asset: string): boolean {
+    if (asset === 'native' || asset === 'XLM') {
+      return true;
+    }
+
+    // Format: CODE:ISSUER
+    const parts = asset.split(':');
+    if (parts.length !== 2) {
+      return false;
+    }
+
+    const [code, issuer] = parts;
+    // Asset code: 1-12 alphanumeric characters
+    if (!/^[a-zA-Z0-9]{1,12}$/.test(code)) {
+      return false;
+    }
+
+    // Issuer must be valid Stellar address
+    return this.isValidStellarAddress(issuer);
   }
 }
