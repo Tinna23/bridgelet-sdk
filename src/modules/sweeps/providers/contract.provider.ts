@@ -81,10 +81,7 @@ export class ContractProvider {
    * Generate authorization hash
    * In production, this would come from the smart contract
    */
-  private generateAuthHash(
-    ephemeralKey: string,
-    destination: string,
-  ): string {
+  private generateAuthHash(ephemeralKey: string, destination: string): string {
     // Simple hash generation for demonstration
     // In production, use proper cryptographic hashing
     const combined = `${ephemeralKey}:${destination}:${Date.now()}`;
