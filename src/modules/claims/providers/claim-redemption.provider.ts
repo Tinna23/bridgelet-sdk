@@ -8,7 +8,6 @@ import {
   AccountStatus,
 } from '../../accounts/entities/account.entity.js';
 import { ClaimRedemptionResponseDto } from '../dto/claim-redemption-response.dto.js';
-import { TokenVerificationProvider } from './token-verification.provider.js';
 import { SweepsService } from '../../sweeps/sweeps.service.js';
 import { WebhooksService } from '../../webhooks/webhooks.service.js';
 
@@ -44,6 +43,10 @@ export class ClaimRedemptionProvider {
       where: { claimTokenHash: tokenHash },
     });
 
+    if (!account) {
+      throw new BadRequestException('Invalid or expired claim token');
+    }
+
     // Double-check not already claimed (race condition protection)
     if (account.status === AccountStatus.CLAIMED) {
       this.logger.log(`Claim already redeemed for account: ${account.id}`);
@@ -52,6 +55,10 @@ export class ClaimRedemptionProvider {
       const existingClaim = await this.claimsRepository.findOne({
         where: { accountId: account.id },
       });
+
+      if (!existingClaim) {
+        throw new BadRequestException('Claim record not found for already redeemed account');
+      }
 
       return {
         success: true,
@@ -117,7 +124,7 @@ export class ClaimRedemptionProvider {
     } catch (error) {
       // Revert account status on failure
       account.status = AccountStatus.PENDING_CLAIM;
-      account.destinationAddress = null;
+      account.destinationAddress = '';
       account.claimedAt = null;
       await this.accountsRepository.save(account);
 

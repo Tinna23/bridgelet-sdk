@@ -2,9 +2,7 @@ import { Controller, Get, Param, Body, Post } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags, ApiParam } from '@nestjs/swagger';
 import { ClaimsService } from './claims.service.js';
 import { ClaimDetailsDto } from './dto/claim-details.dto.js';
-import { VerifyClaimDto } from './dto/verify-claim.dto.js';
 import { RedeemClaimDto } from './dto/redeem-claim.dto.js';
-import { ClaimVerificationResponseDto } from './dto/claim-verification-response.dto.js';
 import { ClaimRedemptionResponseDto } from './dto/claim-redemption-response.dto.js';
 
 @ApiTags('claims')
@@ -27,22 +25,6 @@ export class ClaimsController {
   @ApiResponse({ status: 404, description: 'Claim not found' })
   public async findOne(@Param('id') id: string): Promise<ClaimDetailsDto> {
     return this.claimsService.findClaimById(id);
-  }
-
-  @Post('verify')
-  @ApiOperation({ summary: 'Verify claim token validity' })
-  @ApiResponse({
-    status: 200,
-    description: 'Token is valid and claim is available',
-    type: ClaimVerificationResponseDto,
-  })
-  @ApiResponse({ status: 401, description: 'Invalid or expired token' })
-  @ApiResponse({ status: 400, description: 'Account has not received payment' })
-  @ApiResponse({ status: 409, description: 'Claim already redeemed' })
-  async verify(
-    @Body() verifyClaimDto: VerifyClaimDto,
-  ): Promise<ClaimVerificationResponseDto> {
-    return this.claimsService.verifyClaimToken(verifyClaimDto.claimToken);
   }
 
   @Post('redeem')
