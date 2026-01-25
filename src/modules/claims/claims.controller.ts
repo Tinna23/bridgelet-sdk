@@ -1,7 +1,8 @@
-import { Controller, Get, Param, Body, Post } from '@nestjs/common';
+import { Controller, Get, Param, Post, Body } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags, ApiParam } from '@nestjs/swagger';
 import { ClaimsService } from './claims.service.js';
 import { ClaimDetailsDto } from './dto/claim-details.dto.js';
+import { VerifyClaimDto } from './dto/verify-claim.dto.js';
 import { RedeemClaimDto } from './dto/redeem-claim.dto.js';
 import { ClaimRedemptionResponseDto } from './dto/claim-redemption-response.dto.js';
 
@@ -27,6 +28,18 @@ export class ClaimsController {
     return this.claimsService.findClaimById(id);
   }
 
+  @Post('verify')
+  @ApiOperation({ summary: 'Verify claim token validity' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Token is valid and claim is available',
+    type: ClaimVerificationResponseDto 
+  })
+  @ApiResponse({ status: 401, description: 'Invalid or expired token' })
+  @ApiResponse({ status: 409, description: 'Claim already redeemed' })
+  @ApiResponse({ status: 400, description: 'Account has not received payment or invalid request' })
+  public async verifyClaim(@Body() verifyClaimDto: VerifyClaimDto): Promise<ClaimVerificationResponseDto> {
+    return this.claimsService.verifyClaimToken(verifyClaimDto.claimToken);
   @Post('redeem')
   @ApiOperation({
     summary: 'Redeem claim and sweep funds to destination wallet',

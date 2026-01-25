@@ -6,6 +6,7 @@ import { Claim } from './entities/claim.entity.js';
 import { Account } from '../accounts/entities/account.entity.js';
 
 import { ClaimLookupProvider } from './providers/claim-lookup.provider.js';
+import { TokenVerificationProvider } from './providers/token-verification.provider.js';
 import { ClaimRedemptionProvider } from './providers/claim-redemption.provider.js';
 
 @Module({
@@ -15,6 +16,7 @@ import { ClaimRedemptionProvider } from './providers/claim-redemption.provider.j
     ClaimsService,
     ClaimLookupProvider,
     ClaimRedemptionProvider,
+    TokenVerificationProvider
   ],
   exports: [ClaimsService],
 })
