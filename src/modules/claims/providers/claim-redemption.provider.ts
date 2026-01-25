@@ -9,7 +9,7 @@ import {
 } from '../../accounts/entities/account.entity.js';
 import { ClaimRedemptionResponseDto } from '../dto/claim-redemption-response.dto.js';
 import { SweepsService } from '../../sweeps/sweeps.service.js';
-import { WebhooksService } from '../../webhooks/webhooks.service.js';
+import { TokenVerificationProvider } from './token-verification.provider.js';
 
 @Injectable()
 export class ClaimRedemptionProvider {

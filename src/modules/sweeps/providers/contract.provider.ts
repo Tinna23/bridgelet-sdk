@@ -2,7 +2,7 @@ import { Injectable, Logger, InternalServerErrorException } from '@nestjs/common
 import { ConfigService } from '@nestjs/config';
 import {
   Contract,
-  SorobanRpc,
+  rpc,
   TransactionBuilder,
   BASE_FEE,
   Networks,
@@ -48,7 +48,7 @@ export class ContractProvider {
 
     try {
       // Create Soroban RPC server connection
-      const server = new SorobanRpc.Server(this.sorobanRpcUrl);
+      const server = new rpc.Server(this.sorobanRpcUrl);
 
       // Create contract instance
       const contract = new Contract(this.contractId);
@@ -81,7 +81,7 @@ export class ContractProvider {
       // Simulate contract call first
       const simulated = await server.simulateTransaction(transaction);
 
-      if (SorobanRpc.Api.isSimulationError(simulated)) {
+      if (rpc.Api.isSimulationError(simulated)) {
         throw new Error(`Contract simulation failed: ${simulated.error}`);
       }
 
@@ -136,6 +136,7 @@ export class ContractProvider {
       contractId: this.contractId,
       version: '0.1.0',
     };
+  }
   private generateAuthHash(ephemeralKey: string, destination: string): string {
     // Simple hash generation for demonstration
     // In production, use proper cryptographic hashing
@@ -148,3 +149,4 @@ export class ContractProvider {
     return hash;
   }
 }
+

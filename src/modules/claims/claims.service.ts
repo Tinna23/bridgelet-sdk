@@ -20,6 +20,7 @@ export class ClaimsService {
 
   public async verifyClaimToken(token: string): Promise<ClaimVerificationResponseDto> {
     return this.tokenVerificationProvider.verifyClaimToken(token);
+  }
   public async redeemClaim(
     token: string,
     destinationAddress: string,

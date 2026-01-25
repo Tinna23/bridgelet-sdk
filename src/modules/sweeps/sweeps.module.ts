@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/module';
+import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { SweepsService } from './sweeps.service.js';
 import { ValidationProvider } from './providers/validation.provider.js';
@@ -11,7 +11,7 @@ import { Account } from '../accounts/entities/account.entity.js';
   exports: [SweepsService],
 })
 export class SweepsModule {}
-Update src/config/stellar.config.ts
+// Update src/config/stellar.config.ts
 import { registerAs } from '@nestjs/config';
 
 export default registerAs('stellar', () => ({

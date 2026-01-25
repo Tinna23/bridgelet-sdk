@@ -5,6 +5,7 @@ import { ClaimDetailsDto } from './dto/claim-details.dto.js';
 import { VerifyClaimDto } from './dto/verify-claim.dto.js';
 import { RedeemClaimDto } from './dto/redeem-claim.dto.js';
 import { ClaimRedemptionResponseDto } from './dto/claim-redemption-response.dto.js';
+import { ClaimVerificationResponseDto } from './dto/claim-verification-response.dto.js';
 
 @ApiTags('claims')
 @Controller('claims')
@@ -40,6 +41,8 @@ export class ClaimsController {
   @ApiResponse({ status: 400, description: 'Account has not received payment or invalid request' })
   public async verifyClaim(@Body() verifyClaimDto: VerifyClaimDto): Promise<ClaimVerificationResponseDto> {
     return this.claimsService.verifyClaimToken(verifyClaimDto.claimToken);
+  }
+
   @Post('redeem')
   @ApiOperation({
     summary: 'Redeem claim and sweep funds to destination wallet',

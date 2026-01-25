@@ -30,7 +30,7 @@ export class AccountResponseDto {
   createdAt: Date;
 
   @ApiProperty({ required: false })
-  claimedAt?: Date;
+  claimedAt?: Date | null;
 
   @ApiProperty({ required: false })
   destination?: string;
